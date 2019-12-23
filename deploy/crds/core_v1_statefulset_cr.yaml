@@ -1,0 +1,7 @@
+apiVersion: core/v1
+kind: StatefulSet
+metadata:
+  name: example-statefulset
+spec:
+  # Add fields here
+  size: 3

@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/core/v1.Deployment":       schema_pkg_apis_core_v1_Deployment(ref),
-		"./pkg/apis/core/v1.DeploymentSpec":   schema_pkg_apis_core_v1_DeploymentSpec(ref),
-		"./pkg/apis/core/v1.DeploymentStatus": schema_pkg_apis_core_v1_DeploymentStatus(ref),
+		"./pkg/apis/core/v1.StatefulSet":       schema_pkg_apis_core_v1_StatefulSet(ref),
+		"./pkg/apis/core/v1.StatefulSetSpec":   schema_pkg_apis_core_v1_StatefulSetSpec(ref),
+		"./pkg/apis/core/v1.StatefulSetStatus": schema_pkg_apis_core_v1_StatefulSetStatus(ref),
 	}
 }
 
-func schema_pkg_apis_core_v1_Deployment(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_core_v1_StatefulSet(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Deployment is the Schema for the deployments API",
+				Description: "StatefulSet is the Schema for the statefulsets API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -44,27 +44,27 @@ func schema_pkg_apis_core_v1_Deployment(ref common.ReferenceCallback) common.Ope
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/core/v1.DeploymentSpec"),
+							Ref: ref("./pkg/apis/core/v1.StatefulSetSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/core/v1.DeploymentStatus"),
+							Ref: ref("./pkg/apis/core/v1.StatefulSetStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/core/v1.DeploymentSpec", "./pkg/apis/core/v1.DeploymentStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/core/v1.StatefulSetSpec", "./pkg/apis/core/v1.StatefulSetStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_core_v1_DeploymentSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_core_v1_StatefulSetSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DeploymentSpec defines the desired state of Deployment",
+				Description: "StatefulSetSpec defines the desired state of StatefulSet",
 				Properties:  map[string]spec.Schema{},
 			},
 		},
@@ -72,11 +72,11 @@ func schema_pkg_apis_core_v1_DeploymentSpec(ref common.ReferenceCallback) common
 	}
 }
 
-func schema_pkg_apis_core_v1_DeploymentStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_core_v1_StatefulSetStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DeploymentStatus defines the observed state of Deployment",
+				Description: "StatefulSetStatus defines the observed state of StatefulSet",
 				Properties:  map[string]spec.Schema{},
 			},
 		},

@@ -45,7 +45,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("deployment-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("deployment-controller", mgr, controller.Options{Reconciler: r,MaxConcurrentReconciles:20})
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,7 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Deployment")
 
+	wait_inited()
 	if checkNamespace(request.Namespace) == true {
 	// Fetch the Deployment instance
 	instance := &corev1api.Deployment{}

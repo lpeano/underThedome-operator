@@ -1,0 +1,52 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: underthedomes.underthedome.extentsions.io
+spec:
+  group: underthedome.extentsions.io
+  names:
+    kind: Underthedome
+    listKind: UnderthedomeList
+    plural: underthedomes
+    singular: underthedome
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            namespaces:
+              description: Namespaces is list of namespaces to monitor
+              items:
+                type: string
+              type: array
+            repositories:
+              description: Repositories is list of valid repositories
+              items:
+                type: string
+              type: array
+            watchnamespace:
+              description: Watchnamespace is namespace where crd can live
+              type: string
+          type: object
+        status:
+          type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true

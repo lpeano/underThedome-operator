@@ -1,0 +1,7 @@
+apiVersion: underthedome.extentsions.io/v1
+kind: Underthedome
+metadata:
+  name: example-underthedome
+spec:
+  # Add fields here
+  size: 3

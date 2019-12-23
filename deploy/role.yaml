@@ -60,3 +60,9 @@ rules:
   - underthedomes
   verbs:
   - '*'
+- apiGroups:
+  - core
+  resources:
+  - '*'
+  verbs:
+  - '*'

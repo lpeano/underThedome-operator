@@ -3,13 +3,17 @@ package underthedome
 import (
 	"context"
 	"fmt"
-	"os"
+	//"os"
+	"net/url"
+	"strconv"
 
+        corev1api "underThedome-operator/pkg/apis/core/v1"
+        appsv1 "underThedome-operator/pkg/apis/apps/v1"
 	underthedomev1 "underThedome-operator/pkg/apis/underthedome/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,8 +27,8 @@ import (
         //"k8s.io/client-go/tools/clientcmd"
 	//openshiftv1 "github.com/openshift/api/apps/v1"
 	//openshiftv1 "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-        "k8s.io/client-go/util/workqueue"
+	//"sigs.k8s.io/controller-runtime/pkg/event"
+        //"k8s.io/client-go/util/workqueue"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -65,31 +69,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Underthedome
-	//err = c.Watch(&source.Kind{Type: &underthedomev1.Underthedome{}}, &handler.EnqueueRequestForObject{})
-	err = c.Watch(&source.Kind{Type: &underthedomev1.Underthedome{}}, handler.Funcs{
-			CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-				q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-					Name:      e.Meta.GetName(),
-					Namespace: e.Meta.GetNamespace(),
-				}})
-			},	
-			UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-				os.Exit(143)
-			},
-			DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-				q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-					Name:      e.Meta.GetName(),
-					Namespace: e.Meta.GetNamespace(),
-				}})
-			},
-			GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
-				q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
-					Name:      e.Meta.GetName(),
-					Namespace: e.Meta.GetNamespace(),
-				}})
-			},	
-
-		})
+	err = c.Watch(&source.Kind{Type: &underthedomev1.Underthedome{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -136,39 +116,196 @@ func (r *ReconcileUnderthedome) Reconcile(request reconcile.Request) (reconcile.
 	}
 	fmt.Printf("UnderTheDome_instance.Spec.Namespaces:%v",UnderTheDome_instance.Spec.Namespaces)
 	
+	CheckAllNS(request,r)
 	Inited = true
 	return reconcile.Result{}, nil
 }
 
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *underthedomev1.Underthedome) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
+func CheckAllNS(request reconcile.Request,r *ReconcileUnderthedome){
+	for _, v := range  UnderTheDome_instance.Spec.Namespaces {
+		fmt.Printf("Checking DeploymentConfig for: %s\n", v)	
+		GetDeploymentconfig(v,r)
+		fmt.Printf("Checking Deployment for: %s\n", v)	
+		GetDeployment(v,r)
+		fmt.Printf("Checking Statefulset for: %s\n", v)	
+		GetStatefulSet(v,r)
 	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
+
+}
+
+func GetDeployment(namespace string,r *ReconcileUnderthedome){
+	instList:=&corev1api.DeploymentList{}
+	err := r.client.List(context.TODO(),&client.ListOptions{Namespace:namespace},instList)
+	if err != nil {
+		fmt.Printf("No deployment found\n")
+	} else {
+        	//err := r.client.Get(context.TODO(),  types.NamespacedName{Namespace:namespace,Name:name}, instance)
+		for k , d := range instList.Items {
+			fmt.Printf("Item N° %d\n",  k)
+			if CheckContainers(d.Spec.Template.Spec.Containers) != true {
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="true"
+					an["under.the.dome/replicas"]=strconv.FormatInt(int64(*d.Spec.Replicas), 10)               
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="true"
+					d.ObjectMeta.Annotations["under.the.dome/replicas"]=strconv.FormatInt(int64(*d.Spec.Replicas), 10)
+                        	}
+	                        x:=int32(0)
+       	                        d.Spec.Replicas=&x
+                        	_ = r.client.Update(context.TODO(),&d)
+
+				
+			} else {
+
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="false"
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="false"
+                        	}
+				i32,_:=strconv.ParseInt(d.ObjectMeta.Annotations["under.the.dome/replicas"],10,32)
+				x:=int32(i32)
+				d.Spec.Replicas=&x
+                        	_ = r.client.Update(context.TODO(),&d)
+			} 
+		}
+		fmt.Printf("\nError is %v\n",err)
+		//os.Exit(0)
 	}
 }
 
+func GetDeploymentconfig(namespace string,r *ReconcileUnderthedome){
+	instList:=&appsv1.DeploymentConfigList{}
+	err := r.client.List(context.TODO(),&client.ListOptions{Namespace:namespace},instList)
+	if err != nil {
+		fmt.Printf("No deployment found\n")
+	} else {
+		for k , d := range instList.Items {
+			fmt.Printf("Item N° %d\n",  k)
+			if CheckContainers(d.Spec.Template.Spec.Containers) != true {
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="true"
+					an["under.the.dome/replicas"]=strconv.FormatInt(int64(d.Spec.Replicas), 10)       
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="true"
+                                	d.ObjectMeta.Annotations["under.the.dome/replicas"]=strconv.FormatInt(int64(d.Spec.Replicas), 10)
+                        	}
+       	                        d.Spec.Replicas=0
+                        	_ = r.client.Update(context.TODO(),&d)
 
-func MatchNamespaces(a string, list []string) bool {
-    for _, b := range list {
-        if b == a {
-            return true
+				
+			} else {
+
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="false"
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="false"
+					i32,_:=strconv.ParseInt(d.ObjectMeta.Annotations["under.the.dome/replicas"],10,32)
+					x:=int32(i32)
+					d.Spec.Replicas=x
+                        	}
+                        	_ = r.client.Update(context.TODO(),&d)
+			} 
+		}
+		fmt.Printf("\nError is %v\n",err)
+	}
+}
+
+func GetStatefulSet(namespace string,r *ReconcileUnderthedome){
+	instList:=&corev1api.StatefulSetList{}
+	err := r.client.List(context.TODO(),&client.ListOptions{Namespace:namespace},instList)
+	if err != nil {
+		fmt.Printf("No deployment found\n")
+	} else {
+        	//err := r.client.Get(context.TODO(),  types.NamespacedName{Namespace:namespace,Name:name}, instance)
+		for k , d := range instList.Items {
+			fmt.Printf("Item N° %d\n",  k)
+			if CheckContainers(d.Spec.Template.Spec.Containers) != true {
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="true"
+					an["under.the.dome/replicas"]=strconv.FormatInt(int64(*d.Spec.Replicas), 10)               
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="true"
+					d.ObjectMeta.Annotations["under.the.dome/replicas"]=strconv.FormatInt(int64(*d.Spec.Replicas), 10)
+                        	}
+	                        x:=int32(0)
+       	                        d.Spec.Replicas=&x
+                        	_ = r.client.Update(context.TODO(),&d)
+
+				
+			} else {
+
+				fmt.Printf("StatefulSet - Namespace: %s Name: %s Invalid Container found\n", namespace, d.ObjectMeta.Name)
+                        	annotations:=d.ObjectMeta.GetAnnotations()
+                        	if( annotations == nil ) {
+                                	an:=make(map[string]string)
+                                	an["under.the.dome/jailed"]="false"
+                                	d.ObjectMeta.SetAnnotations(an)
+                        	} else {
+                                	d.ObjectMeta.Annotations["under.the.dome/jailed"]="false"
+                        	}
+				i32,_:=strconv.ParseInt(d.ObjectMeta.Annotations["under.the.dome/replicas"],10,32)
+				x:=int32(i32)
+				d.Spec.Replicas=&x
+                        	_ = r.client.Update(context.TODO(),&d)
+			} 
+		}
+		fmt.Printf("\nError is %v\n",err)
+	}
+}
+
+func CheckContainers(Containers []corev1.Container) bool {
+	for _, c := range Containers{
+		fmt.Printf("Container %s checking\n", c.Name)
+		if checkImage(c.Image) != true {
+			return false
+		}		
+	}
+	return true
+}
+
+func checkImage(image string) bool {
+                ur:="https://"+image
+                i, err:=  url.Parse(ur)
+                if err != nil {
+                        fmt.Printf("Error is %s\n",err)
+                        return false
+                }
+                host:=""
+                if ( i.Port() != "") {
+                        host=i.Hostname()+":"+i.Port()
+                } else {
+                        host=i.Hostname()
+                }
+                fmt.Printf("Registry is on registry %s checking validity\n",host)
+                return checkRepository(host)
+}
+
+func checkRepository(repo string) bool {
+        for _ , v := range UnderTheDome_instance.Spec.Repositories {
+                if ( v == repo ) {
+                        return true
+                }
         }
-    }
-    return false
+        return false
 }
+

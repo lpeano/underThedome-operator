@@ -115,7 +115,15 @@ func (r *ReconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Re
                         fmt.Printf("Invalid Image Jeiling Container %s\n",cont.Name)
 			x:=int32(0)
                         instance.Spec.Replicas=&x
-                        instance.ObjectMeta.Annotations["under.the.dome/jailed"]="true"
+                        annotations:=instance.ObjectMeta.GetAnnotations()
+                        if( annotations == nil ) {
+                                an:=make(map[string]string)
+                                an["under.the.dome/jailed"]="true"
+                                instance.ObjectMeta.SetAnnotations(an)
+                        } else {
+                                instance.ObjectMeta.Annotations["under.the.dome/jailed"]="true"
+                        }
+
                         _ = r.client.Update(context.TODO(),instance)
 
                 } else {
@@ -140,7 +148,12 @@ func checkImage(image string) bool {
                         fmt.Printf("Error is %s\n",err)
                         return false
                 }
-                host:=i.Hostname()+":"+i.Port()
+                host:=""
+                if ( i.Port() != "") {
+                        host=i.Hostname()+":"+i.Port()
+                } else {
+                        host=i.Hostname()
+                }
                 fmt.Printf("Registry is on registry %s checking validity\n",host)
                 return checkRepository(host)
 }

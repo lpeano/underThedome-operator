@@ -10,17 +10,11 @@ The example configuration is shown below.
 >apiVersion: v1
 >items:
 >- apiVersion: underthedome.extentsions.io/v1
-
 >  kind: Underthedome
-
 >  metadata:
-
 >    selfLink: /apis/underthedome.extentsions.io/v1/namespaces/underthedome/underthedomes/example-underthedome
-
 >    uid: 9b9391fa-2139-11ea-b0de-08002730905e
-
 >  spec:
-
 >    namespaces:
 >    - prova2
 >    - peano

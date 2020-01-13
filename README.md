@@ -9,7 +9,7 @@ The example configuration is shown below.
 
 >apiVersion: v1
 >items:
->- apiVersion: underthedome.extentsions.io/v1
+>-- apiVersion: underthedome.extentsions.io/v1
 >  kind: Underthedome
 >  metadata:
 >    selfLink: /apis/underthedome.extentsions.io/v1/namespaces/underthedome/underthedomes/example-underthedome

@@ -39,4 +39,4 @@ metadata:
   selfLink: ""
 ```
 
-Where 'namespaces' is a list of namespaces to be monitored and repositories is a list oc valid refistries.
+Where 'namespaces' is a list of namespaces to be monitored and repositories is a list of valid registries.
